@@ -5,6 +5,9 @@ const tokens = {
   },
   editor: {
     token: 'editor-token'
+  },
+  visitor: {
+    token: 'visitor'
   }
 }
 

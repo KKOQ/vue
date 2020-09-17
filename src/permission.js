@@ -5,6 +5,7 @@ import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
 import { getToken } from '@/utils/auth' // get token from cookie
 import getPageTitle from '@/utils/get-page-title'
+import { constantRoutes } from './router/index'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
@@ -33,8 +34,11 @@ router.beforeEach(async(to, from, next) => {
         try {
           // get user info
           await store.dispatch('user/getInfo')
-
-          next()
+          const accessRoutes = await store.dispatch('GenerateRoutes') // 这里应该没执行或执行后被覆盖
+          router.options.routes = constantRoutes.concat(accessRoutes)
+          router.addRoutes(accessRoutes)
+          next({ ...to, replace: true })
+          // next()
         } catch (error) {
           // remove token and go to login page to re-login
           await store.dispatch('user/resetToken')
