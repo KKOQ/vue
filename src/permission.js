@@ -34,7 +34,7 @@ router.beforeEach(async(to, from, next) => {
         try {
           // get user info
           await store.dispatch('user/getInfo')
-          const accessRoutes = await store.dispatch('GenerateRoutes') // 这里应该没执行或执行后被覆盖
+          const accessRoutes = await store.dispatch('GenerateRoutes')
           router.options.routes = constantRoutes.concat(accessRoutes)
           router.addRoutes(accessRoutes)
           next({ ...to, replace: true })

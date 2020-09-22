@@ -1,7 +1,8 @@
 import { login, logout, getInfo, getIp } from '@/api/user'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
-
+import { Message } from 'element-ui'
+import TagsView from '@/layout/components/TagsView/index'
 const getDefaultState = () => {
   return {
     token: getToken(),
@@ -54,6 +55,11 @@ const actions = {
 
         commit('SET_NAME', name)
         commit('SET_AVATAR', avatar)
+        const last_time = response.last_login_time
+        const login_count = response.login_count
+        var util = require('util')
+        const msg = util.format('欢迎%s，您最近的登陆时间：%s，登录总次数：%d', name, last_time, login_count)
+        Message.success(msg)
         resolve(response)
       }).catch(error => {
         reject(error)
