@@ -1,5 +1,5 @@
 <template>
-  <component :is="type" v-bind="linkProps(to)">
+  <component :is="type" v-bind="linkProps(to, menuId)">
     <slot />
   </component>
 </template>
@@ -12,7 +12,8 @@ export default {
     to: {
       type: String,
       required: true
-    }
+    },
+    menuId: Number
   },
   computed: {
     isExternal() {
@@ -26,13 +27,18 @@ export default {
     }
   },
   methods: {
-    linkProps(to) {
+    linkProps(to, menu_Id) {
       if (this.isExternal) {
         return {
           href: to,
           target: '_blank',
           rel: 'noopener'
         }
+      }
+      if (to.indexOf('/test/test') !== -1) {
+        console.log(to)
+        return { to: { path: to + '/', query: { id: menu_Id }}}
+        // this.$route.params.menuId = menu_Id
       }
       return {
         to: to

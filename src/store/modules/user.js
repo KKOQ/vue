@@ -1,8 +1,8 @@
-import { login, logout, getInfo, getIp } from '@/api/user'
+import { login, logout, getInfo } from '@/api/user'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
 import { Message } from 'element-ui'
-import TagsView from '@/layout/components/TagsView/index'
+
 const getDefaultState = () => {
   return {
     token: getToken(),
