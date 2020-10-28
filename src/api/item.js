@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 export function fetchItems(query) {
   return request({
-    url: 'api/item/view/',
+    url: 'api/item/',
     method: 'get',
     params: query
   })
@@ -20,6 +20,14 @@ export function updateItem(data) {
   return request({
     url: 'api/item/update/',
     method: 'put',
+    data
+  })
+}
+
+export function createItem(data) {
+  return request({
+    url: 'api/item/',
+    method: 'post',
     data
   })
 }

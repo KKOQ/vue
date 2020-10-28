@@ -65,9 +65,12 @@
 
       <el-table-column :label="$t('table.server')" min-width="220px" align="center">
         <template slot-scope="{row}">
-          <el-select v-model="row.selectedServers" placeholder="选择节点进行测试" collapse-tags multiple width="160px" @change="selectedServer(row) ">
+          <el-select v-model="row.selectedServers" placeholder="选择节点进行测试" collapse-tags multiple width="160px" @change="selectedServer(row, 'run') ">
             <el-tooltip v-for="item in row.server" :content="item.description" class="item" effect="dark" placement="right">
-              <el-option :key="item.id" :label="item.name" :value="item.id" />
+              <el-option :key="item.id" :label="item.name" :value="item.id" :disabled="!item.state">
+                <svg-icon :icon-class="item.os" style="margin-right: 10px"/>
+                <span>{{item.name}}</span>
+              </el-option>
             </el-tooltip>
             <el-option key="all" label="全选/反选" value="all" />
           </el-select>
@@ -151,9 +154,12 @@
           <el-input v-model="temp.description" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请输入测试项介绍"/>
         </el-form-item>
         <el-form-item :label="$t('table.server')">
-          <el-select v-model="temp.selectedServers" placeholder="选择部署节点" collapse-tags multiple @change="selectedServer(temp)">
+          <el-select v-model="temp.selectedServers" placeholder="选择部署节点" collapse-tags multiple @change="selectedServer(temp, 'develop')">
             <el-tooltip v-for="item in temp.server" :content="item.description" class="item" effect="dark" placement="right">
-              <el-option :key="item.id" :label="item.name" :value="item.id" />
+              <el-option :key="item.id" :label="item.name" :value="item.id" >
+                <svg-icon :icon-class="item.os" style="margin-right: 10px"/>
+                <span>{{item.name}}</span>
+              </el-option>
             </el-tooltip>
             <el-option key="all" label="全选/反选" value="all" />
           </el-select>
@@ -161,7 +167,7 @@
         <!--        <el-form-item :label="$t('table.importance')">-->
         <!--          <el-rate v-model="temp.importance" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" :max="3" style="margin-top:8px;" />-->
         <!--        </el-form-item>-->
-        <el-form-item :label="$t('table.command')">
+        <el-form-item :label="$t('table.command')" prop="command">
           <el-input v-model="temp.command" placeholder="请填写执行命令，如：dig,python等" />
         </el-form-item>
         <el-form-item :label="$t('table.params')">
@@ -170,12 +176,13 @@
         <el-form-item :label="$t('table.script')">
           <el-upload class="upload-demo"
                      action="api/item/script/upload/"
+                     :headers="headers"
                      :data="{'guid': temp.guid}"
                      :file-list="temp.script"
                      :on-change="scriptUpload"
                      :on-success="uploadSuccess"
                      :on-error="uploadError"
-                     :before-remove="scriptRemove">
+                     :on-remove="uploadRemove">
             <el-button size="small" type="primary">点击上传</el-button>
             <div slot="tip" class="el-upload__tip">{{$t('table.upload_tips')}}</div>
           </el-upload>
@@ -190,24 +197,14 @@
         </el-button>
       </div>
     </el-dialog>
-
-    <el-dialog :visible.sync="dialogPvVisible" title="Reading statistics">
-      <el-table :data="pvData" border fit highlight-current-row style="width: 100%">
-        <el-table-column prop="key" label="Channel" />
-        <el-table-column prop="pv" label="Pv" />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="dialogPvVisible = false">{{ $t('table.confirm') }}</el-button>
-      </span>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-import { fetchPv, createArticle } from '@/api/article'
-import {fetchItems, queryMenus, queryServers, runItem, updateItem} from '@/api/item'
+import {fetchItems, queryMenus, queryServers, runItem, updateItem, createItem} from '@/api/item'
 import waves from '@/directive/waves' // waves directive
 import Pagination from '@/components/Pagination'
+import {getToken} from "@/utils/auth";
 
 
 export default {
@@ -261,15 +258,12 @@ export default {
         update: '编辑',
         create: '添加'
       },
-      dialogPvVisible: false,
-      pvData: [],
       rules: {
-        type: [{ required: true, message: 'type is required', trigger: 'change' }],
-        timestamp: [{ type: 'date', required: true, message: 'timestamp is required', trigger: 'change' }],
-        title: [{ required: true, message: 'title is required', trigger: 'blur' }]
+        type: [{ required: true, message: '项目类型为必填项', trigger: 'change' }],
+        title: [{ required: true, message: '项目名称为必填项', trigger: 'change' }],
+        command: [{ required: true, message: '运行命令为必填项', trigger: 'change' }]
       },
-      downloadLoading: false,
-      popoverContent: undefined
+      headers: {'X-Token': getToken()}
     }
   },
   created() {
@@ -287,6 +281,7 @@ export default {
           this.list[i].selectedParam = this.list[i].params[0]
           this.serverOptions = this.serverOptions.concat(this.list[i].server)
         }
+        console.log('接收到的数据：', this.list)
         this.serverOptions = uniq(this.serverOptions)
         this.total = response.data.total
         setTimeout(() => { this.listLoading = false }, 0.5 * 1000)
@@ -328,16 +323,24 @@ export default {
     },
     resetTemp() {
       this.temp = {
+        guid: '',
         id: undefined,
+        type: '',
         title: '',
-        status: '尚未运行',
-        type: ''
+        description: '',
+        command: '',
+        params: '',
+        script: [],
+        server: [],
+        selectedServers: []
       }
     },
     handleCreate() {
       this.resetTemp()
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
+      this.developedServer()
+      this.getAllMenus()
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
@@ -345,10 +348,29 @@ export default {
     createData() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
-          createArticle(this.temp).then(() => {
-            this.list.unshift(this.temp)
+          const tempData = Object.assign({}, this.temp)
+          delete tempData.guid
+          delete tempData.id
+          if (tempData.script.length > 0){
+            const script = tempData.script[0]
+            tempData.script = {'name': script.name, 'path': ''}
+            if ('response' in script) {
+              tempData.script = {'name': script.name, 'path': script.response.path}
+            }
+          } else {
+            tempData.script = {'name': '', 'path': ''}
+          }
+          delete tempData.server
+          console.log('要提交的数据：', tempData)
+          createItem(tempData).then((response) => {
+            console.log('回复的数据:', response)
+            let data = response.data
+            data.status = '尚未运行'
+            data.params = String(data.params).split(';')
+            data.selectedParam = data.params[0]
+            this.serverOptions = this.serverOptions.concat(data.server)
+            this.serverOptions = uniq(this.serverOptions)
+            this.list.push(data)
             this.dialogFormVisible = false
             this.$notify({
               title: '成功',
@@ -384,13 +406,20 @@ export default {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.temp)
-          console.log('当前选择的脚本:', tempData.script)
+          console.log('更新的temp：', this.temp)
           if (tempData.script.length > 0){
             const script = tempData.script[0]
-            tempData.script = {'name': script.name, 'path': script.response.data}
+            tempData.script = {'name': script.name, 'path': ''}
+            if ('response' in script) {
+              tempData.script = {'name': script.name, 'path': script.response.path}
+            }
+          } else {
+            tempData.script = {'name': '', 'path': ''}
           }
           delete tempData.server
+          console.log('当前选择的脚本:', tempData)
           updateItem(tempData).then((response) => {
+            console.log('response:', response)
             const data = response.data
             // delete data.type
             data['status'] = '尚未运行'
@@ -422,18 +451,17 @@ export default {
       })
       this.list.splice(index, 1)
     },
-    handleFetchPv(pv) {
-      fetchPv(pv).then(response => {
-        this.pvData = response.data.pvData
-        this.dialogPvVisible = true
-      })
-    },
     getSortClass: function(key) {
       const sort = this.listQuery.sort
       return sort === `+${key}` ? 'ascending' : 'descending'
     },
-    selectedServer(row) {
-      const allServers = row.server.map(item => item.id)
+    selectedServer(row, state) {
+      let allServers;
+      if (state == 'run') {
+        allServers = row.server.filter(item => item.state).map(item => item.id)  // 执行状态全选测试节点不可选择离线节点
+      } else {
+        allServers = row.server.map(item => item.id)  // 部署状态全选节点可选择离线节点
+      }
       if (row.selectedServers.indexOf('all') !== -1) {
         if (row.selectedServers.length === allServers.length + 1) {
           row.selectedServers = []
@@ -468,6 +496,7 @@ export default {
         if (type === 'success') {
           row.result = response.data
           row.status = '查看结果'
+          row.lastExecuteTime = response.now
           this.list.splice(this.list.indexOf(row), 1, row)
           this.$message.success(row.title + '完成测试！')
         }
@@ -540,23 +569,28 @@ export default {
     developedServer(row) {
       queryServers({ param: 'all' }).then(response => {
         this.temp.server = response.data
-        this.temp.selectedServers = row.server.map(item => item.id)
+        if (arguments.length === 1) {
+          this.temp.selectedServers = row.server.map(item => item.id)
+        }
       })
     },
     scriptUpload(file, script) {
       this.temp.script = script.slice(-1)
     },
     uploadSuccess(response, file, fileList) {
-      this.temp.script = {'path': response.data, 'name': file.name}
-      console.log('上传成功', this.temp.script, file, fileList)
+      // this.temp.script = {'name': file.name}
+      console.log('上传成功', this.temp.script, file, fileList, response)
     },
     uploadError(response, file, fileList) {
       console.log('上传失败')
     },
-    scriptRemove(file, fileList) {
-      this.temp.script = []
-      console.log('删除文件：', file, fileList)
+    uploadRemove(file, fileList) {
+      this.temp.script.splice(this.temp.script.findIndex(v => v.name == file.name), 1)
     },
+    // scriptRemove(file, fileList) {
+    //   this.temp.script = []
+    //   console.log('删除文件：', file, fileList)
+    // },
     getAllMenus() {
       queryMenus().then(response => {
         this.menuOptions = response.data
