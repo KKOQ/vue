@@ -25,7 +25,7 @@
       <el-button class="filter-item" style="margin-left: 10px;" size="meduim" type="primary" icon="el-icon-edit-outline" @click="handleCreate">
         {{ $t('table.add') }}
       </el-button>
-      <el-button class="filter-item" style="margin-left: 10px;" size="meduim" type="primary" icon="el-icon-video-play" @click="handleCreate">
+      <el-button class="filter-item" style="margin-left: 10px;" size="meduim" type="primary" icon="el-icon-video-play" @click="runSelected">
         {{ $t('table.runSelected') }}
       </el-button>
       <el-checkbox v-model="showUploader" class="filter-item" style="margin-left:15px;" @change="tableKey=tableKey+1">
@@ -91,7 +91,6 @@
           </el-select>
         </template>
       </el-table-column>
-
       <el-table-column :label="$t('table.date')" min-width="155px" align="center">
         <template slot-scope="{row}">
           <span>{{ row.lastExecuteTime }}</span>
@@ -102,17 +101,6 @@
           <span>{{ row.uploader }}</span>
         </template>
       </el-table-column>
-      <!--      <el-table-column :label="$t('table.importance')" width="80px">-->
-      <!--        <template slot-scope="{row}">-->
-      <!--          <svg-icon v-for="n in +row.importance" :key="n" icon-class="star" class="meta-item__icon" />-->
-      <!--        </template>-->
-      <!--      </el-table-column>-->
-      <!--      <el-table-column :label="$t('table.readings')" align="center" width="95">-->
-      <!--        <template slot-scope="{row}">-->
-      <!--          <span v-if="row.pageviews" class="link-type" @click="handleFetchPv(row.pageviews)">{{ row.pageviews }}</span>-->
-      <!--          <span v-else>0</span>-->
-      <!--        </template>-->
-      <!--      </el-table-column>-->
       <el-table-column :label="$t('table.status')" class-name="status-col" min-width="95" align="center">
         <template slot-scope="{row}">
           <el-tag :v-model="row.result" style="cursor:pointer" :type="row.status | statusFilter" effect="light" @click="viewResult(row)">
@@ -128,19 +116,25 @@
           <el-button type="success" size="small" @click="handleUpdate(row)">
             {{ $t('table.edit') }}
           </el-button>
-
-          <!--          <el-button v-if="row.status!='draft'" size="mini" @click="handleModifyStatus(row,'draft')">-->
-          <!--            {{ $t('table.draft') }}-->
-          <!--          </el-button>-->
-          <el-button v-if="row.status!='deleted'" size="small" type="danger" @click="handleDelete(row,$index)">
-            {{ $t('table.delete') }}
-          </el-button>
+          <el-popover
+            placement="top"
+            width="160"
+            v-model="row.delVisible">
+            <p>是否删除此测试项？</p>
+            <div style="text-align: right; margin: 0">
+              <el-button size="mini" type="text" @click="deleteCancel(row)">取消</el-button>
+              <el-button type="primary" size="mini" @click="handleDelete(row,$index)">确定</el-button>
+            </div>
+            <el-button slot="reference" size="small" type="danger" style="margin-left: 10px" @click="deleteUpdate(row)">
+              {{ $t('table.delete') }}
+            </el-button>
+          </el-popover>
         </template>
       </el-table-column>
     </el-table>
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="500px" center>
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="500px" center :close-on-click-modal="false">
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="right" label-width="80px" style="width: 400px; margin-left:20px;" size="small">
         <el-form-item :label="$t('table.type')" prop="type">
           <el-select v-model="temp.type" class="filter-item">
@@ -201,7 +195,7 @@
 </template>
 
 <script>
-import {fetchItems, queryMenus, queryServers, runItem, updateItem, createItem} from '@/api/item'
+import {fetchItems, queryMenus, queryServers, runItem, updateItem, createItem, deleteItem} from '@/api/item'
 import waves from '@/directive/waves' // waves directive
 import Pagination from '@/components/Pagination'
 import {getToken} from "@/utils/auth";
@@ -279,6 +273,7 @@ export default {
           this.list[i].status = '尚未运行'
           this.list[i].params = String(this.list[i].params).split(';')
           this.list[i].selectedParam = this.list[i].params[0]
+          // this.list[i].delVisible = true
           this.serverOptions = this.serverOptions.concat(this.list[i].server)
         }
         console.log('接收到的数据：', this.list)
@@ -443,13 +438,26 @@ export default {
       })
     },
     handleDelete(row, index) {
-      this.$notify({
-        title: '成功',
-        message: '删除成功',
-        type: 'success',
-        duration: 2000
+      deleteItem({'guid': row['guid']}).then((response) => {
+        this.$notify({
+          title: '成功',
+          message: '删除成功',
+          type: 'success',
+          duration: 2000
+        })
+        row.delVisible = false
+        this.list.splice(index, 1)
       })
-      this.list.splice(index, 1)
+    },
+    deleteCancel(row) {
+      row.delVisible=false
+      const index = this.list.indexOf(row)
+      this.$set(this.list, index, this.list[index])
+    },
+    deleteUpdate(row) {
+      row.delVisible=false
+      const index = this.list.indexOf(row)
+      this.$set(this.list, index, this.list[index])
     },
     getSortClass: function(key) {
       const sort = this.listQuery.sort
@@ -477,6 +485,7 @@ export default {
       this.multipleSelection = val
     },
     runCommand(row) {
+      console.log('运行：', row)
       let query = {}
       query.guid = row.guid
       if (row.selectedServers.length <= 0) {
@@ -587,14 +596,27 @@ export default {
     uploadRemove(file, fileList) {
       this.temp.script.splice(this.temp.script.findIndex(v => v.name == file.name), 1)
     },
-    // scriptRemove(file, fileList) {
-    //   this.temp.script = []
-    //   console.log('删除文件：', file, fileList)
-    // },
     getAllMenus() {
       queryMenus().then(response => {
         this.menuOptions = response.data
       })
+    },
+    runSelected() {
+      let unselectedServer = new Array()
+      for( let i=0; i<this.multipleSelection.length; i++) {
+        if(this.multipleSelection[i].selectedServers.length == 0) {
+          unselectedServer.push(this.multipleSelection[i].title)
+        }
+      }
+      if(unselectedServer.length > 0) {
+        var msg = "请选择{}运行的测试节点"
+        msg = msg.replace('{}', unselectedServer.join('、'))
+        this.$message({ message: msg, type: 'warning' })
+      } else {
+        for( let i=0; i<this.multipleSelection.length; i++) {
+          this.runCommand(this.multipleSelection[i])
+        }
+      }
     }
   }
 }

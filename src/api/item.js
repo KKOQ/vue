@@ -32,6 +32,14 @@ export function createItem(data) {
   })
 }
 
+export function deleteItem(data) {
+  return request({
+    url: 'api/item/',
+    method: 'delete',
+    data
+  })
+}
+
 export function queryServers(query) {
   return request({
     url: 'api/server/query/',
@@ -47,10 +55,11 @@ export function queryMenus() { // 请求测试项可以转移到哪些菜单下
   })
 }
 
-export function uploadScript(data) {
-  return request({
-    url: 'api/item/upload/',
-    method: 'post',
-    data
-  })
-}
+
+// export function uploadScript(data) {
+//   return request({
+//     url: 'api/item/upload/',
+//     method: 'post',
+//     data
+//   })
+// }
