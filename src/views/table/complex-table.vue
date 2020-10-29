@@ -158,9 +158,6 @@
             <el-option key="all" label="全选/反选" value="all" />
           </el-select>
         </el-form-item>
-        <!--        <el-form-item :label="$t('table.importance')">-->
-        <!--          <el-rate v-model="temp.importance" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" :max="3" style="margin-top:8px;" />-->
-        <!--        </el-form-item>-->
         <el-form-item :label="$t('table.command')" prop="command">
           <el-input v-model="temp.command" placeholder="请填写执行命令，如：dig,python等" />
         </el-form-item>
@@ -174,8 +171,6 @@
                      :data="{'guid': temp.guid}"
                      :file-list="temp.script"
                      :on-change="scriptUpload"
-                     :on-success="uploadSuccess"
-                     :on-error="uploadError"
                      :on-remove="uploadRemove">
             <el-button size="small" type="primary">点击上传</el-button>
             <div slot="tip" class="el-upload__tip">{{$t('table.upload_tips')}}</div>
@@ -276,7 +271,6 @@ export default {
           // this.list[i].delVisible = true
           this.serverOptions = this.serverOptions.concat(this.list[i].server)
         }
-        console.log('接收到的数据：', this.list)
         this.serverOptions = uniq(this.serverOptions)
         this.total = response.data.total
         setTimeout(() => { this.listLoading = false }, 0.5 * 1000)
@@ -356,9 +350,7 @@ export default {
             tempData.script = {'name': '', 'path': ''}
           }
           delete tempData.server
-          console.log('要提交的数据：', tempData)
           createItem(tempData).then((response) => {
-            console.log('回复的数据:', response)
             let data = response.data
             data.status = '尚未运行'
             data.params = String(data.params).split(';')
@@ -401,7 +393,6 @@ export default {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.temp)
-          console.log('更新的temp：', this.temp)
           if (tempData.script.length > 0){
             const script = tempData.script[0]
             tempData.script = {'name': script.name, 'path': ''}
@@ -412,9 +403,7 @@ export default {
             tempData.script = {'name': '', 'path': ''}
           }
           delete tempData.server
-          console.log('当前选择的脚本:', tempData)
           updateItem(tempData).then((response) => {
-            console.log('response:', response)
             const data = response.data
             // delete data.type
             data['status'] = '尚未运行'
@@ -439,14 +428,22 @@ export default {
     },
     handleDelete(row, index) {
       deleteItem({'guid': row['guid']}).then((response) => {
-        this.$notify({
-          title: '成功',
-          message: '删除成功',
-          type: 'success',
-          duration: 2000
-        })
-        row.delVisible = false
-        this.list.splice(index, 1)
+        if(response.msg == 'success') {
+          this.$notify({
+            title: '成功',
+            message: '删除成功',
+            type: 'success',
+            duration: 2000
+          })
+          row.delVisible = false
+          this.list.splice(index, 1)
+        } else {
+          this.$notify.error({
+            title: '失败',
+            message: '删除失败',
+            duration: 2000
+          })
+        }
       })
     },
     deleteCancel(row) {
@@ -485,7 +482,6 @@ export default {
       this.multipleSelection = val
     },
     runCommand(row) {
-      console.log('运行：', row)
       let query = {}
       query.guid = row.guid
       if (row.selectedServers.length <= 0) {
@@ -585,13 +581,6 @@ export default {
     },
     scriptUpload(file, script) {
       this.temp.script = script.slice(-1)
-    },
-    uploadSuccess(response, file, fileList) {
-      // this.temp.script = {'name': file.name}
-      console.log('上传成功', this.temp.script, file, fileList, response)
-    },
-    uploadError(response, file, fileList) {
-      console.log('上传失败')
     },
     uploadRemove(file, fileList) {
       this.temp.script.splice(this.temp.script.findIndex(v => v.name == file.name), 1)

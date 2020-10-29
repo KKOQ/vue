@@ -17,7 +17,6 @@ const permission = {
     GenerateRoutes({ commit }) {
       return new Promise(resolve => {
         getRouters().then(res => {
-          console.log(res.data)
           const accessedRoutes = filterAsyncRouter(res.data)
           accessedRoutes.push({ path: '*', redirect: '/404', hidden: true })
           commit('SET_ROUTES', accessedRoutes)
