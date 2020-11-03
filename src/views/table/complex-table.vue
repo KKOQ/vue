@@ -10,7 +10,11 @@
           effect="dark"
           placement="right"
         >
-          <el-option :key="item.id" :label="item.name" :value="item.id" />
+          <el-option :key="item.id" :label="item.name" :value="item.id" >
+            <svg-icon v-if="item.state" :icon-class="item.os" style="margin-right: 10px"/>
+            <svg-icon v-else :icon-class="item.os + '_grey'" style="margin-right: 10px"/>
+            <span>{{item.name}}</span>
+          </el-option>
         </el-tooltip>
       </el-select>
       <el-select v-model="listQuery.status" :placeholder="$t('table.status')" clearable class="filter-item" style="width: 130px">
@@ -19,13 +23,13 @@
       <el-select v-model="listQuery.sort" style="width: 140px" class="filter-item" :placeholder="$t('table.id_sort')" @change="handleFilter">
         <el-option v-for="item in sortOptions" :key="item.key" :label="item.label" :value="item.key" />
       </el-select>
-      <el-button v-waves class="filter-item" style="margin-left: 10px;" size="meduim" type="primary" icon="el-icon-search" @click="handleFilter">
+      <el-button v-waves class="filter-item" style="margin-left: 10px;" size="medium" type="primary" icon="el-icon-search" @click="handleFilter">
         {{ $t('table.search') }}
       </el-button>
-      <el-button class="filter-item" style="margin-left: 10px;" size="meduim" type="primary" icon="el-icon-edit-outline" @click="handleCreate">
+      <el-button class="filter-item" style="margin-left: 10px;" size="medium" type="primary" icon="el-icon-edit-outline" @click="handleCreate">
         {{ $t('table.add') }}
       </el-button>
-      <el-button class="filter-item" style="margin-left: 10px;" size="meduim" type="primary" icon="el-icon-video-play" @click="runSelected">
+      <el-button class="filter-item" style="margin-left: 10px;" size="medium" type="primary" icon="el-icon-video-play" @click="runSelected">
         {{ $t('table.runSelected') }}
       </el-button>
       <el-checkbox v-model="showUploader" class="filter-item" style="margin-left:15px;" @change="tableKey=tableKey+1">
@@ -42,7 +46,6 @@
       highlight-current-row
       style="width: 100%;"
       :row-class-name="tableRowClassName"
-      @row-click="rowClick"
       @sort-change="sortChange"
       @selection-change="handleSelectionChange"
     >
@@ -68,7 +71,8 @@
           <el-select v-model="row.selectedServers" placeholder="选择节点进行测试" collapse-tags multiple width="160px" @change="selectedServer(row, 'run') ">
             <el-tooltip v-for="item in row.server" :content="item.description" class="item" effect="dark" placement="right">
               <el-option :key="item.id" :label="item.name" :value="item.id" :disabled="!item.state">
-                <svg-icon :icon-class="item.os" style="margin-right: 10px"/>
+                <svg-icon v-if="item.state" :icon-class="item.os" style="margin-right: 10px"/>
+                <svg-icon v-else :icon-class="item.os + '_grey'" style="margin-right: 10px"/>
                 <span>{{item.name}}</span>
               </el-option>
             </el-tooltip>
@@ -167,7 +171,6 @@
         <el-form-item :label="$t('table.script')">
           <el-upload class="upload-demo"
                      action="api/item/script/upload/"
-                     :headers="headers"
                      :data="{'guid': temp.guid}"
                      :file-list="temp.script"
                      :on-change="scriptUpload"
@@ -193,7 +196,6 @@
 import {fetchItems, queryMenus, queryServers, runItem, updateItem, createItem, deleteItem} from '@/api/item'
 import waves from '@/directive/waves' // waves directive
 import Pagination from '@/components/Pagination'
-import {getToken} from "@/utils/auth";
 
 
 export default {
@@ -252,7 +254,6 @@ export default {
         title: [{ required: true, message: '项目名称为必填项', trigger: 'change' }],
         command: [{ required: true, message: '运行命令为必填项', trigger: 'change' }]
       },
-      headers: {'X-Token': getToken()}
     }
   },
   created() {
@@ -428,7 +429,7 @@ export default {
     },
     handleDelete(row, index) {
       deleteItem({'guid': row['guid']}).then((response) => {
-        if(response.msg == 'success') {
+        if(response['msg'] === 'success') {
           this.$notify({
             title: '成功',
             message: '删除成功',
@@ -462,7 +463,7 @@ export default {
     },
     selectedServer(row, state) {
       let allServers;
-      if (state == 'run') {
+      if (state === 'run') {
         allServers = row.server.filter(item => item.state).map(item => item.id)  // 执行状态全选测试节点不可选择离线节点
       } else {
         allServers = row.server.map(item => item.id)  // 部署状态全选节点可选择离线节点
@@ -497,16 +498,16 @@ export default {
       this.list.splice(this.list.indexOf(row), 1, row)
       query = JSON.stringify(query)
       runItem(query).then(response => {
-        const type = response.type
+        const type = response['type']
         if (type === 'success') {
           row.result = response.data
           row.status = '查看结果'
-          row.lastExecuteTime = response.now
+          row.lastExecuteTime = response['now']
           this.list.splice(this.list.indexOf(row), 1, row)
           this.$message.success(row.title + '完成测试！')
         }
         if (type === 'fail') {
-          row.result = response.message
+          row.result = response['message']
           row.status = '失败'
           this.list.splice(this.list.indexOf(row), 1, row)
           this.$message.error(row.result)
@@ -515,12 +516,6 @@ export default {
     },
     tableRowClassName(row, rowIndex) {
       row.index = rowIndex
-    },
-    rowClick(row) {
-      const index = row.index
-      this.list.forEach((item) => {
-      })
-      this.$set(this.list, index, row)
     },
     viewResult(row) {
       switch (row.status) {
@@ -582,8 +577,8 @@ export default {
     scriptUpload(file, script) {
       this.temp.script = script.slice(-1)
     },
-    uploadRemove(file, fileList) {
-      this.temp.script.splice(this.temp.script.findIndex(v => v.name == file.name), 1)
+    uploadRemove(file) {
+      this.temp.script.splice(this.temp.script.findIndex(v => v.name === file.name), 1)
     },
     getAllMenus() {
       queryMenus().then(response => {
@@ -591,14 +586,14 @@ export default {
       })
     },
     runSelected() {
-      let unselectedServer = new Array()
+      let unselectedServer
       for( let i=0; i<this.multipleSelection.length; i++) {
-        if(this.multipleSelection[i].selectedServers.length == 0) {
+        if(this.multipleSelection[i].selectedServers.length === 0) {
           unselectedServer.push(this.multipleSelection[i].title)
         }
       }
       if(unselectedServer.length > 0) {
-        var msg = "请选择{}运行的测试节点"
+        let msg = "请选择{}运行的测试节点";
         msg = msg.replace('{}', unselectedServer.join('、'))
         this.$message({ message: msg, type: 'warning' })
       } else {
