@@ -1,5 +1,30 @@
 <template>
   <div class="app-container">
+    <div class="filter-container" style="margin-bottom: 10px">
+      <el-input v-model="listQuery.name" :placeholder="$t('table.name')" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
+      <el-select v-model="listQuery.os" :placeholder="$t('table.os')" clearable style="width: 160px" class="filter-item">
+        <el-option key="Linux" label="Linux" value="Linux" >
+          <svg-icon icon-class="Linux" style="margin-right: 10px"/>
+          <span>Linux</span>
+        </el-option>
+        <el-option key="Windows" label="Windows" value="Windows" >
+          <svg-icon icon-class="Windows" style="margin-right: 10px"/>
+          <span>Windows</span>
+        </el-option>
+      </el-select>
+      <el-select v-model="status" :placeholder="$t('table.status')" clearable style="width: 120px" class="filter-item">
+        <el-option key="1" label="运行中" value="1" />
+        <el-option key="2" label="未连接" value="2" />
+        <el-option key="3" label="已禁用" value="3" />
+      </el-select>
+      <el-button v-waves class="filter-item" style="margin-left: 10px;" size="medium" type="primary" plain icon="el-icon-search" @click="handleFilter">
+        {{ $t('table.search') }}
+      </el-button>
+      <el-button class="filter-item" style="margin-left: 10px;" size="medium" type="primary" plain icon="el-icon-edit-outline" @click="handleCreate">
+        {{ $t('table.add') }}
+      </el-button>
+    </div>
+
     <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%">
       <el-table-column align="center" label="ID" width="80">
         <template slot-scope="{row}">
@@ -16,7 +41,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column min-width="180px" align="center" :label="$t('table.intro')">
+      <el-table-column min-width="180px" align="center" :label="$t('table.serverIntro')">
         <template slot-scope="{row}">
           <template v-if="row.edit">
             <el-input v-model="row.description" class="edit-input" size="small" type="text"/>
@@ -124,8 +149,11 @@
     </el-table>
 
 
-    <el-dialog :title="$t('table.editUser')" :visible.sync="dialogFormVisible" width="500px" center>
+    <el-dialog :title="$t('table.editUser')" :visible.sync="dialogFormVisible" width="500px" center :close-on-click-modal="false" @close="resetTemp()">
       <el-form ref="ruleForm" :rules="rules" :model="temp" label-position="right" label-width="80px" style="width: 400px; margin-left:20px;" size="small">
+        <el-form-item v-if="temp.validation" :label="$t('table.path')" prop="path">
+          <el-input v-model="temp.path"/>
+        </el-form-item>
         <el-form-item v-if="!temp.validation" :label="$t('table.oldUsername')" prop="oldUsername">
           <el-input v-model="temp.oldUsername"/>
         </el-form-item>
@@ -154,14 +182,74 @@
         </el-button>
       </div>
     </el-dialog>
+
+    <el-dialog :title="$t('table.addServer')" :visible.sync="dialogCreateVisible" width="500px" center @close="resetTemp1()">
+      <el-form ref="dataForm" :rules="rules1" :model="temp1" label-position="right" label-width="80px" style="width: 400px; margin-left:20px;" size="small">
+        <el-form-item :label="$t('table.name')" prop="name">
+          <el-input v-model="temp1.name" />
+        </el-form-item>
+        <el-form-item :label="$t('table.serverIntro')" prop="description">
+          <el-input v-model="temp1.description" />
+        </el-form-item>
+        <el-form-item :label="$t('table.os')" prop="os">
+          <el-radio-group v-model="temp1.os">
+            <el-radio label="Linux">
+              <svg-icon icon-class="Linux" style="margin-right: 8px"/>
+              <span>Linux</span>
+            </el-radio>
+            <el-radio label="Windows">
+              <svg-icon icon-class="Windows" style="margin-right: 8px"/>
+              <span>Windows</span>
+            </el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item :label="$t('table.ip')" prop="ip">
+          <el-input v-model="temp1.ip" style="width: 160px"/>
+        </el-form-item>
+        <el-form-item :label="$t('table.port')" prop="port">
+          <el-input v-model="temp1.port" type="number" style="width: 120px" placeholder="ssh端口"/>
+        </el-form-item>
+        <el-form-item :label="$t('table.path')" prop="path">
+          <el-input v-model="temp1.path" placeholder="绝对路径，以/为结尾"/>
+        </el-form-item>
+        <el-form-item :label="$t('table.username')" prop="username">
+          <el-input v-model="temp1.username" placeholder="ssh用户登录名"/>
+        </el-form-item>
+        <el-form-item :label="$t('table.password')" prop="password">
+          <el-input v-model="temp1.password" placeholder="ssh用户登录密码" type="password"/>
+        </el-form-item>
+        <el-form-item :label="$t('table.secondPassword')" prop="secondPassword">
+          <el-input v-model="temp1.secondPassword" type="password" placeholder="重复密码"/>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" size="small" @click="handleCreateServer()">
+          {{ $t('table.save') }}
+        </el-button>
+        <el-button @click="dialogCreateVisible = false;resetTemp1()" size="small">
+          {{ $t('table.cancel') }}
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import {connect, deleteServer, disconnect, editServer, fetchServer, usage, validateUser} from '@/api/server'
+import {
+  connect,
+  createServer,
+  deleteServer,
+  disconnect,
+  editServer,
+  fetchServer,
+  usage,
+  validateUser
+} from '@/api/server'
+import waves from '@/directive/waves'
 
 export default {
   name: 'InlineEditTable',
+  directives: { waves },
   filters: {
     stateFilter(usage, state) {
       if (usage === true) {
@@ -186,10 +274,21 @@ export default {
         callback();
       }
     };
+    let validatePass1 = (rule, value, callback) => {
+      if (value === '') {
+        callback(new Error('请再次输入密码'));
+      } else if (value !== this.temp1.secondPassword) {
+        callback(new Error('两次输入密码不一致!'));
+      } else {
+        callback();
+      }
+    };
     return {
       icon: 'el-icon-close',
       dialogFormVisible: false,
+      dialogCreateVisible: false,
       temp: {
+        path: '',
         oldUsername: '',
         oldPassword: '',
         newUsername: '',
@@ -197,18 +296,44 @@ export default {
         secondPassword: '',
         validation: false
       },
+      temp1:{
+        name: '',
+        description: '',
+        os: '',
+        ip: '',
+        port: '',
+        path: '',
+        username: '',
+        password: '',
+        secondPassword: ''
+      },
       rules: {
+        path: [{ required: true, message: '运行目录为必填项', trigger: 'blur' }],
         oldUsername: [{ required: true, message: '用户名为必填项', trigger: 'blur' }],
         oldPassword: [{ required: true, message: '密码为必填项', trigger: 'blur' }],
         newUsername: [{ required: true, message: '用户名为必填项', trigger: 'blur' }],
         newPassword: [{ required: true, message: '密码为必填项', trigger: 'blur' }],
-        secondPassword: [{validator: validatePass, trigger: 'blur'}]
+        secondPassword: [{required: true, validator: validatePass, trigger: 'blur'}]
+      },
+      rules1: {
+        name: [{ required: true, message: '节点名称为必填项', trigger: 'blur' }],
+        description: [{ required: true, message: '介绍为必填项', trigger: 'blur' }],
+        os: [{ required: true, message: '操作系统为必选项', trigger: 'blur' }],
+        ip: [{ required: true, message: 'IP地址为必填项', trigger: 'blur' }],
+        port: [{ required: true, message: '端口为必填项', trigger: 'blur' }],
+        path: [{ required: true, message: '运行目录为必填项', trigger: 'blur' }],
+        username: [{ required: true, message: '用户名为必填项', trigger: 'blur' }],
+        password: [{ required: true, message: '密码为必填项', trigger: 'blur' }],
+        secondPassword: [{required: true, validator: validatePass1, trigger: 'blur'}]
       },
       list: null,
-      listLoading: true,
+      listLoading: false,
+      status: undefined,
       listQuery: {
-        page: 1,
-        limit: 10
+        name: undefined,
+        os: undefined,
+        usage: undefined,
+        state: undefined
       },
       stateMap: {
         true: {
@@ -229,6 +354,23 @@ export default {
   methods: {
     async getList() {
       this.listLoading = true
+      switch (this.status) {
+        case "1":
+          this.listQuery.usage = true;
+          this.listQuery.state = true;
+          break
+        case "2":
+          this.listQuery.usage = true;
+          this.listQuery.state = false;
+          break
+        case "3":
+          this.listQuery.usage = false;
+          this.listQuery.state = undefined;
+          break
+        default:
+          this.listQuery.usage = undefined;
+          this.listQuery.state = undefined;
+      }
       fetchServer(this.listQuery).then((response) => {
         this.list = response.data
         for(let i=0; i<this.list.length; i++) {
@@ -240,9 +382,8 @@ export default {
           this.list[i]['icon']['delete'] = 'el-icon-delete'
           this.list[i]['edit'] = false
         }
-        console.log(this.list)
+        this.listLoading = false
       })
-      this.listLoading = false
     },
     cancelEdit(row) {
       row.edit = false
@@ -268,12 +409,11 @@ export default {
       delete tempData.edit
       console.log('tempData:', tempData)
       editServer(tempData).then((response) => {
-        row.edit = false
-        this.list.splice(this.list.indexOf(row), 1, row)
-        this.$message({
-          message: response['message'],
-          type: response['type']
-        })
+        this.$message({message: response['message'], type: response['type']})
+        if(response['type'] === 'success') {
+          row.edit = false
+          this.list.splice(this.list.indexOf(row), 1, row)
+        }
       })
     },
     ableServer(row) {
@@ -344,12 +484,26 @@ export default {
     },
     resetTemp() {
       this.temp= {
+        path: '',
         oldUsername: '',
         oldPassword: '',
         newUsername: '',
         newPassword: '',
         secondPassword: '',
         validation: false
+      }
+    },
+    resetTemp1() {
+      this.temp1= {
+        name: '',
+        description: '',
+        os: '',
+        ip: '',
+        port: '',
+        path: '',
+        username: '',
+        password: '',
+        secondPassword: ''
       }
     },
     validateUserInfo() {
@@ -360,6 +514,7 @@ export default {
             if (response['message'] === 'success') {
               this.temp.validation = true
               this.temp.token = response['data']
+              this.temp.path = response['path']
             } else {
               this.$message.error({message: response['message']})
             }
@@ -370,11 +525,32 @@ export default {
     saveUserInfo() {
       this.$refs['ruleForm'].validate((valid) => {
         if (valid) {
-          let data = {'username': this.temp.newUsername, 'password': this.temp.newPassword, 'token': this.temp.token}
+          let data = {'username': this.temp.newUsername, 'password': this.temp.newPassword,
+            'path': this.temp.path, 'token': this.temp.token}
           validateUser(this.temp.id, data).then((response) => {
             this.$message({message: response['message'], type: response['type']})
-            this.dialogFormVisible = false
-            this.resetTemp()
+            if(response['type'] === 'success') {
+              this.dialogFormVisible = false
+              this.resetTemp()
+            }
+          })
+        }
+      })
+    },
+    handleCreateServer() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid){
+          let tempData = Object.assign({}, this.temp1)
+          delete tempData.secondPassword
+          createServer(tempData).then((response) => {
+            this.$message({message: response['message'], type: response['type']})
+            if(response['type'] === 'success') {
+              // let data = response['data']
+              // console.log(this.list, data)
+              this.getList()
+              this.dialogCreateVisible = false
+              this.resetTemp1()
+            }
           })
         }
       })
@@ -400,6 +576,13 @@ export default {
         }
         row.icon.delete = icon_bak
       })
+    },
+    handleFilter() {
+      this.getList()
+    },
+    handleCreate() {
+      this.resetTemp1()
+      this.dialogCreateVisible = true
     }
   }
 }

@@ -4,7 +4,7 @@ export function fetchServer(data) {
   return request({
     url: '/api/server/',
     method: 'get',
-    param: data
+    params: data
   })
 }
 
@@ -50,5 +50,13 @@ export function deleteServer(id) {
   return request({
     url: '/api/server/' + id + '/',
     method: 'delete'
+  })
+}
+
+export function createServer(data) {
+  return request({
+    url: '/api/server/',
+    method: 'post',
+    data
   })
 }

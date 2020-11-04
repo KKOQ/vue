@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <div class="filter-container">
+    <div class="filter-container" style="margin-bottom: 10px">
       <el-input v-model="listQuery.title" :placeholder="$t('table.title')" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-select v-model="listQuery.server" :placeholder="$t('table.server')" clearable style="width: 120px" class="filter-item">
         <el-tooltip
@@ -274,7 +274,7 @@ export default {
         }
         this.serverOptions = uniq(this.serverOptions)
         this.total = response.data.total
-        setTimeout(() => { this.listLoading = false }, 0.5 * 1000)
+        this.listLoading = false
       })
       // fetchList(this.listQuery).then(response => {
       //   this.list = response.data.items
