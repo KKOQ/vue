@@ -264,6 +264,10 @@ export default {
       this.listQuery.menuId = this.$route.query.id
       this.listLoading = true
       fetchItems(this.listQuery).then(response => {
+        if(response.data === null) {
+          this.listLoading = false
+          return
+        }
         this.list = response.data.items
         for (let i = 0, len = response.data.items.length; i < len; i++) {
           this.list[i].status = '尚未运行'

@@ -277,7 +277,7 @@ export default {
     let validatePass1 = (rule, value, callback) => {
       if (value === '') {
         callback(new Error('请再次输入密码'));
-      } else if (value !== this.temp1.secondPassword) {
+      } else if (value !== this.temp1.password) {
         callback(new Error('两次输入密码不一致!'));
       } else {
         callback();
