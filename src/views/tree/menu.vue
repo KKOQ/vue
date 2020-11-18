@@ -57,7 +57,7 @@
                 <el-input v-model="temp.name" />
               </el-form-item>
               <el-form-item :label="$t('menu.path')" prop="path">
-                <el-input v-model="temp.path" />
+                <el-input v-model="temp.path" placeholder="仅根节点以/开始，其他节点无需以/开始"/>
               </el-form-item>
               <el-form-item :label="$t('menu.component')" prop="component">
                 <el-input v-if="groupId===0" v-model="temp.component" />
@@ -99,11 +99,9 @@
 <script>
 import {fetchMenus, getMenuInfo, updateMenu} from "@/api/menu";
 import elementIcons from "@/icons/element-icons";
-import ScrollPane from "@/layout/components/TagsView/ScrollPane";
 
 export default {
   name: 'menuTree',
-  components: {ScrollPane},
   data(){
     return {
       elementIcons,
@@ -139,6 +137,7 @@ export default {
       lastSelectedKey: undefined,
       formState: '',
       originalForm: '',
+      updateData: [],
     }
   },
   created() {
@@ -160,7 +159,7 @@ export default {
         this.data = response.data
         this.groupId = response['groupId']
         this.updateData = []
-        JSON2Array(this.data, this.updateData, 0)
+        JSON2Array(this.data, this.updateData)
       })
     },
     openMenu(event, obj, node) {
@@ -330,6 +329,7 @@ export default {
       }
       this.newData = []
       JSON2Array(this.data, this.newData, 0, true)
+      console.log('originalData, newData:', this.updateData, this.newData)
       let orderData = getDiff(this.updateData, this.newData)
       let data = {}
       if (this.editData.length > 0) {
@@ -354,11 +354,14 @@ export default {
           updateMenu(data).then((response) => {
             this.$message({type: response['type'], message: response['message']})
             let new_data = response['data']
+            for (let i=0; i<orderData.length; i++) {
+              findData(this.data, orderData[i]['id'])['order'] = orderData[i]['order']
+            }
             for (let key in new_data) {
               findData(this.data, parseInt(key))['id'] = new_data[key]
             }
             this.updateData = []
-            JSON2Array(this.data, this.updateData, 0)
+            JSON2Array(this.data, this.updateData)
             this.deleteIds = []
             this.editData = []
           })
@@ -384,7 +387,7 @@ function getDiff(arr1, arr2) {
   }
   return res
 }
-function JSON2Array(data, array, parentId, reorder=false) {
+function JSON2Array(data, array, parentId=0, reorder=false) {
   for(let i=0; i<data.length; i++) {
     array.push({'id': data[i].id, 'parentId': parentId, 'order': reorder? i + 1 : data[i].order})
     if(data[i].children) {
