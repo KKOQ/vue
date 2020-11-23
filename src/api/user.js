@@ -28,3 +28,26 @@ export function getRouters() {
     method: 'get'
   })
 }
+
+export function changeGroup(data) {
+  return request({
+    url: '/api/user/change/',
+    method: 'post',
+    data
+  })
+}
+
+export function createUser(data) {
+  return request({
+    url: '/api/user/',
+    method: 'post',
+    data
+  })
+}
+
+export function deleteUser(data) {
+  return request({
+    url: '/api/user/' + data + '/',
+    method: 'delete',
+  })
+}

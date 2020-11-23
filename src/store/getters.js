@@ -6,6 +6,9 @@ const getters = {
   token: state => state.user.token,
   avatar: state => state.user.avatar,
   name: state => state.user.name,
+  ip: state => state.user.ip,
+  time: state => state.user.time,
+  count: state => state.user.count,
   permission_routes: state => state.permission.routes
 }
 export default getters

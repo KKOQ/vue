@@ -5,9 +5,12 @@ import { Message } from 'element-ui'
 
 const getDefaultState = () => {
   return {
-    token: getToken(),
+    token: '',
     name: '',
-    avatar: ''
+    avatar: '',
+    ip: 0,
+    time: '',
+    count: 0
   }
 }
 
@@ -25,6 +28,15 @@ const mutations = {
   },
   SET_AVATAR: (state, avatar) => {
     state.avatar = avatar
+  },
+  SET_IP: (state, ip) => {
+    state.ip = ip
+  },
+  SET_TIME: (state, time) => {
+    state.time = time
+  },
+  SET_COUNT: (state, count) => {
+    state.count = count
   }
 }
 
@@ -53,13 +65,18 @@ const actions = {
 
         const { name, avatar } = response
 
+
+        const last_time = response['last_login_time']
+        const login_count = response['login_count']
+        const login_ip = response['last_login_ip']
         commit('SET_NAME', name)
         commit('SET_AVATAR', avatar)
-        const last_time = response.last_login_time
-        const login_count = response.login_count
-        var util = require('util')
-        const msg = util.format('欢迎%s，您最近的登陆时间：%s，登录总次数：%d', name, last_time, login_count)
-        Message.success(msg)
+        commit('SET_TIME', last_time)
+        commit('SET_IP', login_ip)
+        commit('SET_COUNT', login_count)
+        const util = require('util');
+        const msg = util.format('欢迎%s，您最近登陆时间：%s，最近登录IP地址：%s，登录总次数：%d', name, last_time, login_ip, login_count)
+        Message({type:"success", message: msg, duration:3000})
         resolve(response)
       }).catch(error => {
         reject(error)
