@@ -438,7 +438,7 @@ export default {
       this.lastParentNode = draggingNode.parent
       return 'id' in dropNode.data && type === 'inner';
     },
-    nodeDrop(draggingNode, dropNode, type, event) {
+    nodeDrop(draggingNode, dropNode) {
       let message = '是否将用户' + draggingNode.data['username'] + '加入到' + dropNode.data['title'] + '用户组中？'
       this.$confirm(message, '提示',{
         confirmButtonText: '确定',
