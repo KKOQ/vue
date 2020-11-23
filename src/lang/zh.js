@@ -38,7 +38,24 @@ export default {
     cancel: '取消'
   },
   user: {
-
+    guid: 'GUID',
+    username: '用户名',
+    email: 'E-mail',
+    createdTime: '创建时间',
+    lastLoginTime: '最近登陆时间',
+    lastLoginIP: '最近登录IP',
+    loginCount: '登录次数',
+    password: '设置密码',
+    secondPassword: '重复密码',
+    save: '保存',
+    cancel: '取消',
+  },
+  group:{
+    id: '用户组ID',
+    title: '名称',
+    description: '介绍',
+    viewPermission: '浏览权限',
+    editPermission: '编辑权限'
   },
   login: {
     title: '测试门户系统登录',

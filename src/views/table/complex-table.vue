@@ -216,7 +216,7 @@ export default {
   data() {
     return {
       tableKey: 0,
-      list: null,
+      list: [],
       total: 0,
       listLoading: true,
       listQuery: {
@@ -362,7 +362,9 @@ export default {
             data.selectedParam = data.params[0]
             this.serverOptions = this.serverOptions.concat(data.server)
             this.serverOptions = uniq(this.serverOptions)
-            this.list.push(data)
+            if(this.listQuery.menuId === data.type) {
+              this.list.push(data)
+            }
             this.dialogFormVisible = false
             this.$notify({
               title: '成功',

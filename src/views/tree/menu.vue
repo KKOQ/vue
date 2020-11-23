@@ -262,7 +262,8 @@ export default {
       // JSON2Array(this.data, temp, 0)
       // let count = temp.filter(function (value) { return value.id < 0 }).length
       // let data = {id: -1 - count, title: '', icon: '', name: '', path: '', component: '', redirect: ''}
-      let data = {id: -1 - this.editData.length, title: '', icon: '', name: '', path: '', component: '', redirect: ''}
+      let data = {id: -1 - this.editData.length, title: '新增节点' + (1 + this.editData.length), icon: 'el-icon-document', name: '',
+                  path: '', component: '', redirect: ''}
       this.editData.push(data)
       this.originalForm = JSON.stringify(data)
       this.temp = Object.assign({}, data)
