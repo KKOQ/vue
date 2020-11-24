@@ -545,8 +545,6 @@ export default {
           createServer(tempData).then((response) => {
             this.$message({message: response['message'], type: response['type']})
             if(response['type'] === 'success') {
-              // let data = response['data']
-              // console.log(this.list, data)
               this.getList()
               this.dialogCreateVisible = false
               this.resetTemp1()

@@ -27,18 +27,13 @@ export default {
     }
   },
   methods: {
-    linkProps(to, menu_Id) {
+    linkProps(to) {
       if (this.isExternal) {
         return {
           href: to,
           target: '_blank',
           rel: 'noopener'
         }
-      }
-      if (to.indexOf('/test/test') !== -1) {  // 在地址后面添加?id=xx，后续需要修改
-        console.log(to)
-        return { to: { path: to + '/', query: { id: menu_Id }}}
-        // this.$route.params.menuId = menu_Id
       }
       return {
         to: to

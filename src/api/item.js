@@ -32,9 +32,9 @@ export function createItem(data) {
   })
 }
 
-export function deleteItem(data) {
+export function deleteItem(data, id) {
   return request({
-    url: 'api/item/',
+    url: 'api/item/' + id + '/',
     method: 'delete',
     data
   })
