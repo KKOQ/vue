@@ -282,8 +282,7 @@ export default {
       let path = this.$route.path
       path = path.split('/').slice(1)
       path[0] = '/' + path[0]
-      let menuId = this.fetchMenuId(this.$router.options.routes, path)
-      this.listQuery.menuId = menuId
+      this.listQuery.menuId = this.fetchMenuId(this.$router.options.routes, path)
       this.listLoading = true
       fetchItems(this.listQuery).then(response => {
         if(response.data === null) {
