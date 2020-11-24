@@ -57,12 +57,13 @@
                 <el-input v-model="temp.name" />
               </el-form-item>
               <el-form-item :label="$t('menu.path')" prop="path">
-                <el-input v-model="temp.path" placeholder="仅根节点以/开始，其他节点无需以/开始"/>
+                <el-input v-model="temp.path" placeholder="请填写节点相对路径，如：item, menu等"/>
               </el-form-item>
               <el-form-item :label="$t('menu.component')" prop="component">
-                <el-input v-if="groupId===0" v-model="temp.component" />
-                <el-radio-group v-else v-model="temp.component">
-                  <el-radio label="tree">文件夹</el-radio>
+<!--                <el-input v-if="groupId===0" v-model="temp.component" />-->
+                <el-radio-group v-model="temp.component" @change="componentChange">
+                  <el-radio label="Layout">根节点</el-radio>
+                  <el-radio label="folder">文件夹</el-radio>
                   <el-radio label="table/complex-table">叶子节点</el-radio>
                 </el-radio-group>
               </el-form-item>
@@ -222,11 +223,26 @@ export default {
       this.formState = 'edit'
 
     },
+    componentChange(label) {
+      if (label === 'Layout' && this.temp.path[0] !== '/') {
+        this.temp.path = '/' + this.temp.path
+      }
+      if (label !== 'Layout' && this.temp.path[0] === '/') {
+        this.temp.path = this.temp.path.slice(1)
+      }
+    },
     editMenu() {
       let id = this.temp.id
       if (this.groupId !== 0) {
-        this.temp.name = this.temp.path + '_name'
+        if (this.temp.path[0] === '/') {
+          this.temp.name = this.temp.path.slice(1) + '_name'
+        } else {
+          this.temp.name = this.temp.path + '_name'
+        }
         this.temp.redirect = ''
+      }
+      if (this.temp.component === 'Layout' && this.temp.path[0] !== '/') {
+        this.temp.path = '/' + this.temp.path
       }
       this.$refs.dataForm.validate((valid) => {
         if (valid) {

@@ -264,8 +264,26 @@ export default {
     this.getList()
   },
   methods: {
+    fetchMenuId(routes, path) {
+      if (path.length === 1) {
+        for (let i=0; i<routes.length; i++) {
+          if (routes[i].path === path[0]) {
+            return routes[i].id
+          }
+        }
+      }
+      for (let i=0; i<routes.length; i++) {
+        if (routes[i].path === path[0]) {
+          return this.fetchMenuId(routes[i].children, path.slice(1))
+        }
+      }
+    },
     getList() {
-      this.listQuery.menuId = this.$route.query.id
+      let path = this.$route.path
+      path = path.split('/').slice(1)
+      path[0] = '/' + path[0]
+      let menuId = this.fetchMenuId(this.$router.options.routes, path)
+      this.listQuery.menuId = menuId
       this.listLoading = true
       fetchItems(this.listQuery).then(response => {
         if(response.data === null) {
@@ -285,15 +303,6 @@ export default {
         this.total = response.data.total
         this.listLoading = false
       })
-      // fetchList(this.listQuery).then(response => {
-      //   this.list = response.data.items
-      //   this.total = response.data.total
-      //
-      //   // Just to simulate the time of the request
-      //   setTimeout(() => {
-      //     this.listLoading = false
-      //   }, 1.5 * 1000)
-      // })
     },
     handleFilter() {
       this.listQuery.page = 1
@@ -439,7 +448,7 @@ export default {
       })
     },
     handleDelete(row, index) {
-      deleteItem({'guid': row['guid']}).then((response) => {
+      deleteItem({'guid': row['guid']}, row['id']).then((response) => {
         if(response['msg'] === 'success') {
           this.$notify({
             title: '成功',
@@ -564,7 +573,7 @@ export default {
         confirmButtonText: confirmText,
         center: true,
         cancelButtonClass: 'el-button el-button--default el-button--small el-button--primary'
-      }).then(action => {
+      }).then(() => {
         if (index < name.length - 1) {
           this.msg(name, result, index + 1)
         }
