@@ -26,7 +26,7 @@
       <el-button v-waves class="filter-item" style="margin-left: 10px;" size="medium" type="primary" icon="el-icon-search" @click="handleFilter">
         {{ $t('table.search') }}
       </el-button>
-      <el-button class="filter-item" style="margin-left: 10px;" size="medium" type="primary" icon="el-icon-edit-outline" @click="handleCreate">
+      <el-button v-if="auth.edit" class="filter-item" style="margin-left: 10px;" size="medium" type="primary" icon="el-icon-edit-outline" @click="handleCreate">
         {{ $t('table.add') }}
       </el-button>
       <el-button class="filter-item" style="margin-left: 10px;" size="medium" type="primary" icon="el-icon-video-play" @click="runSelected">
@@ -112,15 +112,15 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('table.actions')" align="center" min-width="210" class-name="small-padding fixed-width">
+      <el-table-column :label="$t('table.actions')" align="center" :min-width="auth.edit?210:100" class-name="small-padding fixed-width">
         <template slot-scope="{row,$index}">
           <el-button size="small" type="primary" @click="runCommand(row)">
             {{ $t('table.run') }}
           </el-button>
-          <el-button type="success" size="small" @click="handleUpdate(row)">
+          <el-button v-if="auth.edit" type="success" size="small" @click="handleUpdate(row)">
             {{ $t('table.edit') }}
           </el-button>
-          <el-popover
+          <el-popover v-if="auth.edit"
             placement="top"
             width="160"
             v-model="row.delVisible">
@@ -254,6 +254,10 @@ export default {
         title: [{ required: true, message: '项目名称为必填项', trigger: 'change' }],
         command: [{ required: true, message: '运行命令为必填项', trigger: 'change' }]
       },
+      auth: {
+        view: undefined,
+        edit: undefined
+      }
     }
   },
   created() {
@@ -268,6 +272,7 @@ export default {
           this.listLoading = false
           return
         }
+        this.auth = response['auth']
         this.list = response.data.items
         for (let i = 0, len = response.data.items.length; i < len; i++) {
           this.list[i].status = '尚未运行'
