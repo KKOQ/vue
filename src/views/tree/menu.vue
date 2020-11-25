@@ -60,7 +60,6 @@
                 <el-input v-model="temp.path" placeholder="请填写节点相对路径，如：item, menu等"/>
               </el-form-item>
               <el-form-item :label="$t('menu.component')" prop="component">
-<!--                <el-input v-if="groupId===0" v-model="temp.component" />-->
                 <el-radio-group v-model="temp.component" @change="componentChange">
                   <el-radio label="Layout">根节点</el-radio>
                   <el-radio label="folder">文件夹</el-radio>
@@ -346,7 +345,6 @@ export default {
       }
       this.newData = []
       JSON2Array(this.data, this.newData, 0, true)
-      console.log('originalData, newData:', this.updateData, this.newData)
       let orderData = getDiff(this.updateData, this.newData)
       let data = {}
       if (this.editData.length > 0) {
@@ -361,7 +359,7 @@ export default {
       if (Object.keys(data).length > 0) {
         let text = '是否确认提交数据？'
         if (this.deleteIds.length > 0) {
-          text = '若菜单中含有测试数据，则会被一并删除，是否确认提交？'
+          text = '若删除的菜单中含有测试项，则测试项会被一并删除，是否确认提交？'
         }
         this.$confirm(text, '提示', {
           confirmButtonText: '确定',

@@ -407,7 +407,6 @@ export default {
       delete tempData.usage
       delete tempData.original
       delete tempData.edit
-      console.log('tempData:', tempData)
       editServer(tempData).then((response) => {
         this.$message({message: response['message'], type: response['type']})
         if(response['type'] === 'success') {

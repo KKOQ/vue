@@ -285,11 +285,11 @@ export default {
       this.listQuery.menuId = this.fetchMenuId(this.$router.options.routes, path)
       this.listLoading = true
       fetchItems(this.listQuery).then(response => {
+        this.auth = response['auth']
         if(response.data === null) {
           this.listLoading = false
           return
         }
-        this.auth = response['auth']
         this.list = response.data.items
         for (let i = 0, len = response.data.items.length; i < len; i++) {
           this.list[i].status = '尚未运行'
@@ -433,7 +433,11 @@ export default {
             this.serverOptions = this.serverOptions.concat(data.server)
             this.serverOptions = uniq(this.serverOptions)
             const index = this.list.findIndex(v => v.id === data.id)
-            this.list.splice(index, 1, data)
+            if (data['type'] !== this.listQuery.menuId) {
+              this.list.splice(index, 1)
+            } else {
+              this.list.splice(index, 1, data)
+            }
             this.dialogFormVisible = false
             this.$notify({
               title: '成功',
